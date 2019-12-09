@@ -130,7 +130,7 @@ namespace TodoList.WebServer.Test.Unit
             {
                 var repository = new CollectionRepository(db);
 
-                return await repository.FindAsync(collection.Id, c => new
+                return await repository.FindAndMapAsync(collection.Id, c => new
                 {
                     Collection = c,
                     TodoItemsCount = c.TodoItems.Count,
@@ -164,7 +164,7 @@ namespace TodoList.WebServer.Test.Unit
             await Database.OnceAsync(async db =>
             {
                 var repo = new CollectionRepository(db);
-                var found = await repo.FindAsync(collectionId, collection => new
+                var found = await repo.FindAndMapAsync(collectionId, collection => new
                 {
                     Collection = collection,
                     TodoItemsCount = collection.TodoItems.Count,

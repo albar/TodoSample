@@ -32,7 +32,7 @@ namespace TodoList.WebServer.Repositories
                 .SingleAsync(c => c.Id == id);
         }
 
-        public async Task<TResult> FindAsync<TResult>(int id, Expression<Func<Collection, TResult>> predicate)
+        public async Task<TResult> FindAndMapAsync<TResult>(int id, Expression<Func<Collection, TResult>> predicate)
         {
             return await _database.Collections
                 .AsNoTracking()
