@@ -268,14 +268,15 @@ namespace TodoList.WebServer.Test.Unit
         public async Task Listed_Queryable_Collections_Should_Not_Be_Tracked()
         {
             // Given
+            const string prefix = "Collection";
             await Database.OnceAndSaveAsync(async db =>
             {
-                var collections = Enumerable.Range(0, 10).Select(i => new Collection { Name = $"Collection{i}" });
+                var collections = Enumerable.Range(0, 10).Select(i => new Collection { Name = $"{prefix}{i}" });
                 await db.AddRangeAsync(collections);
             });
 
             // When
-            var real = await Database.OnceAsync(async db =>
+            await Database.OnceAsync(async db =>
             {
                 var repository = new CollectionRepository(db);
                 var options = new CollectionListOptions
@@ -284,27 +285,18 @@ namespace TodoList.WebServer.Test.Unit
                 };
                 var collections = await repository.ListAsync(options);
 
-                var realNames = collections.Select(c => new
-                {
-                    Id = c.Id,
-                    Name = c.Name,
-                }).ToArray();
-
                 foreach (var collection in collections)
                 {
                     collection.Name = $"Manipulated {collection.Name}";
                 }
 
                 await db.SaveChangesAsync();
-                return realNames;
             });
 
             // Then
-            var ids = real.Select(r => r.Id).ToArray();
             var collections = await Database.OnceAsync(async db =>
-                await db.Collections.Where(c => ids.Contains(c.Id)).ToArrayAsync());
-
-            Assert.True(collections.All(collection => real.Any(r => r.Name == collection.Name)));
+                await db.Collections.ToArrayAsync());
+            Assert.True(collections.All(collection => collection.Name.StartsWith(prefix)));
         }
 
         [Fact]
