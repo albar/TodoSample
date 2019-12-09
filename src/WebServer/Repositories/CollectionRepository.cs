@@ -43,13 +43,13 @@ namespace TodoList.WebServer.Repositories
 
         public async Task<Collection[]> ListAsync()
         {
-            return await _database.Collections.ToArrayAsync();
+            return await _database.Collections.AsNoTracking().ToArrayAsync();
         }
 
         public async Task<Collection[]> ListAsync(IQueryOptions<Collection> options)
         {
             var query = options.BuildIntoQuery(_database.Collections.AsQueryable());
-            return await query.ToArrayAsync();
+            return await query.AsNoTracking().ToArrayAsync();
         }
 
         public async Task<bool> UpdateAsync(Collection collection)

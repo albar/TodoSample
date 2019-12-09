@@ -204,7 +204,7 @@ namespace TodoList.WebServer.Test.Unit
         }
 
         [Fact]
-        public async Task Can_Limit_List_Collection()
+        public async Task Can_Query_List_Collection()
         {
             // Given
             const int limit = 3;
@@ -230,6 +230,81 @@ namespace TodoList.WebServer.Test.Unit
             Assert.Equal(limit, collections.Length);
             var inDbCount = await Database.OnceAsync(async db => await db.Collections.CountAsync());
             Assert.Equal(count, inDbCount);
+        }
+
+        [Fact]
+        public async Task Listed_Collections_Should_Not_Be_Tracked()
+        {
+            // Given
+            var collectionsNames = new[] { "Collection1", "Collection2", "Collection3" };
+            await Database.OnceAndSaveAsync(async db =>
+            {
+                var collections = collectionsNames.Select(name => new Collection { Name = name });
+                await db.AddRangeAsync(collections);
+            });
+
+            // When
+            await Database.OnceAsync(async db =>
+            {
+                var repository = new CollectionRepository(db);
+                var collections = await repository.ListAsync();
+
+                foreach (var collection in collections)
+                {
+                    collection.Name = $"Manipulated {collection.Name}";
+                }
+
+                await db.SaveChangesAsync();
+            });
+
+            // Then
+            var collections = await Database.OnceAsync(async db =>
+                await db.Collections.ToArrayAsync());
+
+            Assert.True(collections.All(collection => collectionsNames.Contains(collection.Name)));
+        }
+
+        [Fact]
+        public async Task Listed_Queryable_Collections_Should_Not_Be_Tracked()
+        {
+            // Given
+            await Database.OnceAndSaveAsync(async db =>
+            {
+                var collections = Enumerable.Range(0, 10).Select(i => new Collection { Name = $"Collection{i}" });
+                await db.AddRangeAsync(collections);
+            });
+
+            // When
+            var real = await Database.OnceAsync(async db =>
+            {
+                var repository = new CollectionRepository(db);
+                var options = new CollectionListOptions
+                {
+                    Limit = 3,
+                };
+                var collections = await repository.ListAsync(options);
+
+                var realNames = collections.Select(c => new
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                }).ToArray();
+
+                foreach (var collection in collections)
+                {
+                    collection.Name = $"Manipulated {collection.Name}";
+                }
+
+                await db.SaveChangesAsync();
+                return realNames;
+            });
+
+            // Then
+            var ids = real.Select(r => r.Id).ToArray();
+            var collections = await Database.OnceAsync(async db =>
+                await db.Collections.Where(c => ids.Contains(c.Id)).ToArrayAsync());
+
+            Assert.True(collections.All(collection => real.Any(r => r.Name == collection.Name)));
         }
 
         [Fact]
