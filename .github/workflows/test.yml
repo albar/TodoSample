@@ -1,0 +1,22 @@
+name: Test
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.dotnet }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        dotnet: [ '3.0.101', '3.1.100' ]
+    steps:
+    - name: Clone
+      uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+    - name: Setup
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: ${{ matrix.dotnet }}
+    - run: dotnet build --configuration Release
+    - run: dotnet test
